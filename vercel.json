@@ -4,7 +4,7 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "chatbot_api.py"
+      "dest": "entry.py"
     }
   ]
 }
