@@ -6,6 +6,8 @@ import argparse
 import sys
 from pathlib import Path
 
+from chatbot_api import app  # Export FastAPI app for Vercel
+
 
 def main():
     """Main CLI handler"""
