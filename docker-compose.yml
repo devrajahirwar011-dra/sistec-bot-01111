@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  sistec-chatbot:
+    build: .
+    container_name: sistec-chatbot
+    ports:
+      - "8000:8000"
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      VECTOR_DB_TYPE: chroma
+      DOCUMENTS_PATH: /app/documents
+      CHUNK_SIZE: 1000
+      CHUNK_OVERLAP: 100
+      TOP_K_CHUNKS: 5
+      SIMILARITY_THRESHOLD: 0.3
+      TEMPERATURE: 0.7
+    volumes:
+      - ./documents:/app/documents
+      - ./vector_store:/app/vector_store
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
