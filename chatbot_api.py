@@ -10,8 +10,8 @@ import os
 
 app = FastAPI(title="SISTec RAG Chatbot", version="1.0.0")
 
-# Initialize RAG Engine
-rag_engine = RAGEngine(vector_db_type="chroma")
+# RAG engine is created lazily to avoid heavy imports and import-time failures
+rag_engine = None
 
 # Flag to check if system is initialized
 is_initialized = False
@@ -57,34 +57,43 @@ async def health_check():
 @app.post("/initialize")
 async def initialize_system(request: InitializationRequest):
     """Initialize vector database with documents"""
-    global is_initialized
-    
+    global is_initialized, rag_engine
+
     try:
         if not os.path.exists(request.documents_path):
             raise HTTPException(
                 status_code=400,
                 detail=f"Documents path not found: {request.documents_path}"
             )
-        
+
+        # Lazily create RAG engine if not present
+        if rag_engine is None:
+            try:
+                rag_engine = RAGEngine(vector_db_type="chroma")
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Failed to create RAG engine: {e}")
+
         # Process all documents
         chunks = ChunkProcessor.process_all_documents(request.documents_path)
-        
+
         if not chunks:
             raise HTTPException(
                 status_code=400,
                 detail="No documents found to process"
             )
-        
+
         # Initialize vector database
         rag_engine.initialize_vector_db(chunks)
         is_initialized = True
-        
+
         return {
             "status": "initialized",
             "chunks_created": len(chunks),
             "documents_path": request.documents_path
         }
-    
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
